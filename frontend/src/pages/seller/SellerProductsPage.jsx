@@ -8,12 +8,14 @@ export function SellerProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [categories, setCategories] = useState([]);
-  const [form, setForm] = useState({
+  const [editing, setEditing] = useState(null);
+  const [editForm, setEditForm] = useState({
     name: "",
     description: "",
     price: "",
     category: "",
     image: "",
+    isActive: true,
   });
 
   const load = async () => {
@@ -35,36 +37,6 @@ export function SellerProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await apiRequest(
-        "/api/products",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            name: form.name,
-            description: form.description,
-            price: Number(form.price),
-            category: form.category,
-            images: form.image ? [form.image] : [],
-          }),
-        },
-        token
-      );
-      setForm({
-        name: "",
-        description: "",
-        price: "",
-        category: "",
-        image: "",
-      });
-      await load();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
   const loadCategories = async () => {
     try {
       const data = await apiRequest("/api/categories");
@@ -72,28 +44,48 @@ export function SellerProductsPage() {
     } catch {}
   };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const startEdit = (p) => {
+    setEditing(p._id);
+    setEditForm({
+      name: p.name || "",
+      description: p.description || "",
+      price: String(p.price ?? ""),
+      category: p.category || "",
+      image: p.images?.[0] || "",
+      isActive: p.isActive !== false,
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
     try {
-      const fd = new FormData();
-      fd.append("image", file);
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/uploads`,
+      await apiRequest(
+        `/api/products/${editing}`,
         {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: fd,
-        }
+          method: "PUT",
+          body: JSON.stringify({
+            name: editForm.name,
+            description: editForm.description || undefined,
+            price: Number(editForm.price),
+            category: editForm.category,
+            images: editForm.image ? [editForm.image] : [],
+            isActive: !!editForm.isActive,
+          }),
+        },
+        token
       );
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Upload failed");
-      }
-      const data = await res.json();
-      setForm((f) => ({ ...f, image: data.url }));
+      setEditing(null);
+      await load();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const removeProduct = async (id) => {
+    if (!confirm("Delete this product?")) return;
+    try {
+      await apiRequest(`/api/products/${id}`, { method: "DELETE" }, token);
+      await load();
     } catch (err) {
       alert(err.message);
     }
@@ -102,47 +94,60 @@ export function SellerProductsPage() {
   return (
     <div>
       <h1>My Products</h1>
-      <form className="simple-form" onSubmit={handleSubmit}>
-        <input
-          placeholder="Name"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-        />
-        <select
-          value={form.category}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
-          required
-        >
-          <option value="">Select category</option>
-          {categories.map((c) => (
-            <option key={c._id} value={c.name}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <input
-          type="number"
-          placeholder="Price"
-          value={form.price}
-          onChange={(e) => setForm({ ...form, price: e.target.value })}
-          required
-        />
-        <input type="file" accept="image/*" onChange={handleFileChange} />
-        <input
-          placeholder="Image URL"
-          value={form.image}
-          onChange={(e) => setForm({ ...form, image: e.target.value })}
-        />
-        <textarea
-          placeholder="Description"
-          value={form.description}
-          onChange={(e) =>
-            setForm({ ...form, description: e.target.value })
-          }
-        />
-        <button type="submit">Add product</button>
-      </form>
+
+      {editing && (
+        <div className="simple-form" style={{ marginBottom: 20 }}>
+          <h3>Edit product</h3>
+          <input
+            placeholder="Name"
+            value={editForm.name}
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            required
+          />
+          <select
+            value={editForm.category}
+            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+            required
+          >
+            <option value="">Select category</option>
+            {categories.map((c) => (
+              <option key={c._id} value={c.name}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            placeholder="Price"
+            value={editForm.price}
+            onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Image URL"
+            value={editForm.image}
+            onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
+          />
+          <textarea
+            placeholder="Description (optional)"
+            value={editForm.description}
+            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+          />
+          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={!!editForm.isActive}
+              onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
+            />
+            Active
+          </label>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={saveEdit}>Save</button>
+            <button onClick={() => setEditing(null)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
       <div className="product-grid">
         {products.map((p) => (
           <div key={p._id} className="product-card">
@@ -160,6 +165,11 @@ export function SellerProductsPage() {
             <h3>{p.name}</h3>
             <p>${p.price}</p>
             <p>{p.category}</p>
+            <p style={{ opacity: 0.8 }}>{p.isActive ? "Active" : "Inactive"}</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => startEdit(p)}>Edit</button>
+              <button onClick={() => removeProduct(p._id)}>Delete</button>
+            </div>
           </div>
         ))}
       </div>

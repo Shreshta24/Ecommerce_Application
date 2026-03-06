@@ -28,7 +28,7 @@ export function LoginPage() {
         body: JSON.stringify(body),
       });
       login(data);
-      if (data.user.role === "customer") navigate("/");
+      if (data.user.role === "customer") navigate("/customer");
       if (data.user.role === "admin") navigate("/admin");
       if (data.user.role === "seller") navigate("/seller");
     } catch (err) {
@@ -42,7 +42,7 @@ export function LoginPage() {
     <div className="auth-page">
       <div className="auth-card glass-card">
         <div className="auth-header">
-          <h1 className="gradient-text">{isRegister ? "Join EcoShop" : "Welcome Back"}</h1>
+          <h1 className="gradient-text">{isRegister ? "Join SB Shop" : "Welcome Back"}</h1>
           <p>{isRegister ? "Start your premium shopping journey today." : "Log in to access your personal dashboard."}</p>
         </div>
 
@@ -94,7 +94,7 @@ export function LoginPage() {
 
         <div className="auth-footer">
           <p>
-            {isRegister ? "Already have an account?" : "New to EcoShop?"}{" "}
+            {isRegister ? "Already have an account?" : "New to SB Shop?"}{" "}
             <a href="#" onClick={(e) => { e.preventDefault(); setIsRegister(!isRegister); }}>
               {isRegister ? "Sign In" : "Create an Account"}
             </a>

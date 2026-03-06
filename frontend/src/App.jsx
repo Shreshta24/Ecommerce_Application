@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import "./App.css";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { CartProvider } from "./cart/CartContext";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { CustomerDashboard } from "./pages/customer/CustomerDashboard";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
@@ -23,46 +24,62 @@ function ProtectedRoute({ children, roles }) {
   return children;
 }
 
+function AppContent() {
+  const { user } = useAuth();
+  
+  return (
+    <Router>
+      <div className="app-container">
+        <Navbar />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={
+              user ? (
+                user.role === "customer" ? <Navigate to="/customer" replace /> :
+                user.role === "admin" ? <Navigate to="/admin" replace /> :
+                <Navigate to="/seller" replace />
+              ) : <LoginPage />
+            } />
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/customer/*"
+              element={
+                <ProtectedRoute roles={["customer"]}>
+                  <CustomerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/*"
+              element={
+                <ProtectedRoute roles={["admin"]}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/seller/*"
+              element={
+                <ProtectedRoute roles={["seller"]}>
+                  <SellerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </Router>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="app-container">
-          <Navbar />
-          <main className="main-content">
-            <Routes>
-              <Route path="/" element={<CustomerHomePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route
-                path="/customer/*"
-                element={
-                  <ProtectedRoute roles={["customer"]}>
-                    <CustomerDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/*"
-                element={
-                  <ProtectedRoute roles={["admin"]}>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/seller/*"
-                element={
-                  <ProtectedRoute roles={["seller"]}>
-                    <SellerDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </Router>
+      <CartProvider>
+        <AppContent />
+      </CartProvider>
     </AuthProvider>
   );
 }

@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
+import { authRequired } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -75,6 +76,73 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Login failed" });
+  }
+});
+
+router.get("/me", authRequired, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-passwordHash");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      address: user.address,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch profile" });
+  }
+});
+
+router.put("/me", authRequired, async (req, res) => {
+  try {
+    const { name, address } = req.body || {};
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (name !== undefined) user.name = String(name);
+    if (address !== undefined && typeof address === "object") {
+      user.address = {
+        ...user.address,
+        ...address,
+      };
+    }
+    await user.save();
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      address: user.address,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to update profile" });
+  }
+});
+
+router.post("/reset-password", authRequired, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) {
+      return res
+        .status(400)
+        .json({ message: "currentPassword and newPassword are required" });
+    }
+    if (String(newPassword).length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!ok) return res.status(401).json({ message: "Current password is incorrect" });
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: "Password updated" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to reset password" });
   }
 });
 

@@ -148,4 +148,26 @@ router.get(
   }
 );
 
+// Seller: delete own product
+router.delete(
+  "/:id",
+  authRequired,
+  requireRole("seller"),
+  async (req, res) => {
+    try {
+      const product = await Product.findOneAndDelete({
+        _id: req.params.id,
+        seller: req.user.id,
+      });
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      res.json({ message: "Product deleted" });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: "Failed to delete product" });
+    }
+  }
+);
+
 export default router;

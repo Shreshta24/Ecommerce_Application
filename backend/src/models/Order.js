@@ -21,6 +21,19 @@ const orderItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const trackingUpdateSchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: ["ordered", "shipped", "out_for_delivery", "delivered", "cancelled"],
+    },
+    location: { type: String },
+    note: { type: String },
+    at: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     customer: {
@@ -39,11 +52,13 @@ const orderSchema = new mongoose.Schema(
     deliveryAddress: deliveryAddressSchema,
     status: {
       type: String,
-      enum: ["processing", "shipped", "delivered", "cancelled"],
-      default: "processing",
+      enum: ["ordered", "shipped", "out_for_delivery", "delivered", "cancelled"],
+      default: "ordered",
     },
     shippingTrackingNumber: { type: String },
     shippingCarrier: { type: String },
+    currentLocation: { type: String },
+    trackingUpdates: [trackingUpdateSchema],
     transportAgent: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "TransportAgent",

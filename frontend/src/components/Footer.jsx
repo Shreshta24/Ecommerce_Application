@@ -6,7 +6,7 @@ const Footer = () => {
         <footer className="footer glass-card">
             <div className="footer-container">
                 <div className="footer-brand">
-                    <h2 className="gradient-text">EcoShop</h2>
+                    <h2 className="gradient-text">SB Shop</h2>
                     <p>Elevate your lifestyle with our curated collection of premium products.</p>
                 </div>
 
@@ -40,7 +40,7 @@ const Footer = () => {
                 </div>
             </div>
             <div className="footer-bottom">
-                <p>&copy; {new Date().getFullYear()} EcoShop. All rights reserved.</p>
+                <p>&copy; {new Date().getFullYear()} SB Shop. All rights reserved.</p>
             </div>
         </footer>
     );

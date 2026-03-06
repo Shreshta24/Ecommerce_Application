@@ -41,6 +41,33 @@ router.post("/transport-agents", async (req, res) => {
   }
 });
 
+router.put("/transport-agents/:id", async (req, res) => {
+  try {
+    const agent = await TransportAgent.findById(req.params.id);
+    if (!agent) return res.status(404).json({ message: "Transport agent not found" });
+    const allowed = ["name", "phone", "company", "isActive"];
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) agent[key] = req.body[key];
+    }
+    await agent.save();
+    res.json(agent);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to update transport agent" });
+  }
+});
+
+router.delete("/transport-agents/:id", async (req, res) => {
+  try {
+    const agent = await TransportAgent.findByIdAndDelete(req.params.id);
+    if (!agent) return res.status(404).json({ message: "Transport agent not found" });
+    res.json({ message: "Transport agent removed" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to remove transport agent" });
+  }
+});
+
 // Categories CRUD
 router.get("/categories", async (req, res) => {
   try {
@@ -103,8 +130,14 @@ router.delete("/categories/:id", async (req, res) => {
 // Assign transport agent and update shipping details for an order
 router.put("/orders/:id/shipping", async (req, res) => {
   try {
-    const { status, shippingTrackingNumber, shippingCarrier, transportAgentId } =
-      req.body;
+    const {
+      status,
+      shippingTrackingNumber,
+      shippingCarrier,
+      transportAgentId,
+      currentLocation,
+      note,
+    } = req.body;
     const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -114,12 +147,42 @@ router.put("/orders/:id/shipping", async (req, res) => {
     if (shippingTrackingNumber) order.shippingTrackingNumber = shippingTrackingNumber;
     if (shippingCarrier) order.shippingCarrier = shippingCarrier;
     if (transportAgentId) order.transportAgent = transportAgentId;
+    if (currentLocation) order.currentLocation = currentLocation;
+
+    if (status || currentLocation || note) {
+      order.trackingUpdates = order.trackingUpdates || [];
+      order.trackingUpdates.push({
+        status: status || undefined,
+        location: currentLocation || undefined,
+        note: note || undefined,
+        at: new Date(),
+      });
+    }
 
     await order.save();
-    res.json(order);
+    const populated = await Order.findById(order._id)
+      .populate("customer", "name email")
+      .populate("items.product")
+      .populate("transportAgent");
+    res.json(populated);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to update shipping details" });
+  }
+});
+
+// Admin: order details
+router.get("/orders/:id", async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate("customer", "name email")
+      .populate("items.product")
+      .populate("transportAgent");
+    if (!order) return res.status(404).json({ message: "Order not found" });
+    res.json(order);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch order" });
   }
 });
 

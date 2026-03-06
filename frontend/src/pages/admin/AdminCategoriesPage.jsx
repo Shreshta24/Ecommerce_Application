@@ -54,6 +54,21 @@ export function AdminCategoriesPage() {
     }
   };
 
+  const editCategory = async (c) => {
+    const nextName = prompt("New category name", c.name);
+    if (!nextName) return;
+    try {
+      await apiRequest(
+        `/api/admin/categories/${c._id}`,
+        { method: "PUT", body: JSON.stringify({ name: nextName }) },
+        token
+      );
+      await load();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const removeCategory = async (id) => {
     try {
       await apiRequest(`/api/admin/categories/${id}`, { method: "DELETE" }, token);
@@ -81,6 +96,7 @@ export function AdminCategoriesPage() {
         {categories.map((c) => (
           <li key={c._id}>
             {c.name} {c.isActive ? "(active)" : "(inactive)"}{" "}
+            <button onClick={() => editCategory(c)}>Edit</button>{" "}
             <button onClick={() => toggleActive(c._id, c.isActive)}>
               {c.isActive ? "Deactivate" : "Activate"}
             </button>{" "}

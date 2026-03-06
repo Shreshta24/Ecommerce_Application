@@ -47,6 +47,13 @@ router.post("/", authRequired, requireRole("customer"), async (req, res) => {
       paymentStatus: "paid",
       paymentMethod: paymentMethod || "card",
       deliveryAddress,
+      status: "ordered",
+      trackingUpdates: [
+        {
+          status: "ordered",
+          location: "Order placed",
+        },
+      ],
     });
 
     res.status(201).json(order);
@@ -61,11 +68,39 @@ router.get("/mine", authRequired, requireRole("customer"), async (req, res) => {
   try {
     const orders = await Order.find({ customer: req.user.id })
       .populate("items.product")
+      .populate("transportAgent")
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Failed to fetch orders" });
+  }
+});
+
+// Seller: list orders that include seller's products
+router.get("/seller", authRequired, requireRole("seller"), async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate("customer", "name email")
+      .populate("items.product")
+      .populate("transportAgent")
+      .sort({ createdAt: -1 });
+
+    const mine = [];
+    for (const o of orders) {
+      const sellerItems = (o.items || []).filter(
+        (it) => it.product?.seller?.toString?.() === req.user.id
+      );
+      if (sellerItems.length === 0) continue;
+      mine.push({
+        ...o.toObject(),
+        items: sellerItems,
+      });
+    }
+    res.json(mine);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch seller orders" });
   }
 });
 
