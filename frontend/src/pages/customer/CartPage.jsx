@@ -22,7 +22,9 @@ export function CustomerCartPage() {
 
   const canCheckout = items.length > 0 && !!token;
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+  const apiBase =
+    import.meta.env.VITE_API_BASE_URL ||
+    "https://ecommerce-application-efzj.onrender.com";
   const imageUrl = (img) =>
     !img
       ? ""

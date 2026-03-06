@@ -35,7 +35,10 @@ export function SellerAddProductPage() {
       const fd = new FormData();
       fd.append("image", file);
       const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/uploads`,
+        `${
+          import.meta.env.VITE_API_BASE_URL ||
+          "https://ecommerce-application-efzj.onrender.com"
+        }/api/uploads`,
         {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },

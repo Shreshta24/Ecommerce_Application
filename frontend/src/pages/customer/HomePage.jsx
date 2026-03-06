@@ -104,7 +104,10 @@ export function CustomerHomePage() {
                     src={
                       p.images[0].startsWith("http")
                         ? p.images[0]
-                        : `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}${p.images[0]}`
+                        : `${
+                            import.meta.env.VITE_API_BASE_URL ||
+                            "https://ecommerce-application-efzj.onrender.com"
+                          }${p.images[0]}`
                     }
                     alt={p.name}
                     className="product-image"
